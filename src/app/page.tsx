@@ -1,103 +1,306 @@
-import Image from "next/image";
+'use client';
+import { useState, useEffect } from "react";
+import TimerForm from "./components/TimerForm";
+import TimerList from "./components/TimerList";
+import History from "./components/History";
+import Notification from "./components/Notification";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [timers, setTimers] = useState([]);
+  const [newTimer, setNewTimer] = useState({
+    name: "",
+    duration: 0,
+    category: "",
+    halfwayAlert: false,
+  });
+  const [categories, setCategories] = useState({});
+  const [showModal, setShowModal] = useState(false);
+  const [completedTimer, setCompletedTimer] = useState(null);
+  const [collapsedCategories, setCollapsedCategories] = useState({});
+  const [timerHistory, setTimerHistory] = useState([]);
+  const [showHalfwayAlert, setShowHalfwayAlert] = useState(false);
+  const [halfwayAlertTimer, setHalfwayAlertTimer] = useState(null);
+  const [activeTab, setActiveTab] = useState("timers");
+  const [showDoneAlert, setShowDoneAlert] = useState(false);
+const [doneAlertTimer, setDoneAlertTimer] = useState(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+  // Load data from localStorage on initial render
+  useEffect(() => {
+    const storedTimers = JSON.parse(localStorage.getItem("timers")) || [];
+    const storedHistory = JSON.parse(localStorage.getItem("timerHistory")) || [];
+    const storedCollapsed = JSON.parse(localStorage.getItem("collapsedCategories")) || {};
+
+    setTimers(storedTimers);
+    setTimerHistory(storedHistory);
+    setCollapsedCategories(storedCollapsed);
+  }, []);
+
+  // Auto-close halfway alert
+useEffect(() => {
+  if (showHalfwayAlert) {
+    const timeout = setTimeout(() => {
+      setShowHalfwayAlert(false);
+    }, 3000); // Close after 3 seconds
+    return () => clearTimeout(timeout);
+  }
+}, [showHalfwayAlert]);
+
+// Auto-close done alert
+useEffect(() => {
+  if (showDoneAlert) {
+    const timeout = setTimeout(() => {
+      setShowDoneAlert(false);
+    }, 3000);
+    return () => clearTimeout(timeout);
+  }
+}, [showDoneAlert]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimers((prevTimers) =>
+        prevTimers.map((timer) => {
+          if (timer.status === "Running") {
+            const newRemaining = Math.max(0, timer.remaining - 1);
+
+            if (
+              timer.halfwayAlert &&
+              Math.ceil(timer.duration / 2) === newRemaining &&
+              newRemaining > 0
+            ) {
+              setHalfwayAlertTimer(timer.name);
+              setShowHalfwayAlert(true);
+            }
+
+            if (newRemaining === 0 && timer.remaining !== 0) {
+              setDoneAlertTimer(timer.name);
+              setShowDoneAlert(true);
+
+              const newHistoryItem = {
+                name: timer.name,
+                category: timer.category,
+                completedAt: new Date().toISOString(),
+                duration: timer.duration,
+              };
+
+              setTimerHistory((prev) => {
+                const updatedHistory = [...prev, newHistoryItem];
+                localStorage.setItem("timerHistory", JSON.stringify(updatedHistory));
+                return updatedHistory;
+              });
+
+              return { ...timer, remaining: newRemaining, status: "Completed" };
+            }
+
+            return { ...timer, remaining: newRemaining };
+          }
+          return timer;
+        })
+      );
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [timers]);
+
+  // Saving timers to localStorage for history
+  useEffect(() => {
+    localStorage.setItem("timers", JSON.stringify(timers));
+    groupTimersByCategory();
+  }, [timers]);
+
+  // Group timers by category
+  const groupTimersByCategory = () => {
+    const grouped = timers.reduce((acc, timer) => {
+      acc[timer.category] = acc[timer.category] || [];
+      acc[timer.category].push(timer);
+      return acc;
+    }, {});
+    setCategories(grouped);
+  };
+
+  // function to add a new timer
+  const addTimer = () => {
+    if (!newTimer.name || newTimer.duration <= 0 || !newTimer.category) {
+      alert("Please fill all required fields");
+      return;
+    }
+
+    setTimers([...timers, {
+      ...newTimer,
+      remaining: newTimer.duration,
+      status: "Paused",
+    }]);
+    setNewTimer({ name: "", duration: 0, category: "", halfwayAlert: false });
+  };
+
+  // Timer control functions
+  const startTimer = (index) => {
+    setTimers((prev) =>
+      prev.map((timer, i) =>
+        i === index ? { ...timer, status: "Running" } : timer
+      )
+    );
+  };
+
+  const pauseTimer = (index) => {
+    setTimers((prev) =>
+      prev.map((timer, i) =>
+        i === index ? { ...timer, status: "Paused" } : timer
+      )
+    );
+  };
+
+  const resetTimer = (index) => {
+    setTimers((prev) =>
+      prev.map((timer, i) =>
+        i === index ? { ...timer, remaining: timer.duration, status: "Paused" } : timer
+      )
+    );
+  };
+// function to mark completed
+  const markCompleted = (index) => {
+    const completedTimerName = timers[index].name;
+    setCompletedTimer(completedTimerName);
+    setShowModal(true);
+
+    const newHistoryItem = {
+      name: timers[index].name,
+      category: timers[index].category,
+      completedAt: new Date().toISOString(),
+      duration: timers[index].duration,
+    };
+
+    setTimerHistory((prev) => {
+      const updatedHistory = [...prev, newHistoryItem];
+      localStorage.setItem("timerHistory", JSON.stringify(updatedHistory));
+      return updatedHistory;
+    });
+
+    setTimers((prev) =>
+      prev.map((timer, i) =>
+        i === index ? { ...timer, status: "Completed" } : timer
+      )
+    );
+  };
+
+  // Bulk actions
+  const startAllInCategory = (category) => {
+    setTimers((prev) =>
+      prev.map((timer) =>
+        timer.category === category && timer.status !== "Completed"
+          ? { ...timer, status: "Running" }
+          : timer
+      )
+    );
+  };
+
+  const pauseAllInCategory = (category) => {
+    setTimers((prev) =>
+      prev.map((timer) =>
+        timer.category === category && timer.status === "Running"
+          ? { ...timer, status: "Paused" }
+          : timer
+      )
+    );
+  };
+
+  const resetAllInCategory = (category) => {
+    setTimers((prev) =>
+      prev.map((timer) =>
+        timer.category === category
+          ? { ...timer, remaining: timer.duration, status: "Paused" }
+          : timer
+      )
+    );
+  };
+
+  const deleteTimer = (index) => {
+    if (confirm("Are you sure you want to delete this timer?")) {
+      setTimers((prev) => prev.filter((_, i) => i !== index));
+    }
+  };
+
+  const clearHistory = () => {
+    if (confirm("Are you sure you want to clear all history?")) {
+      setTimerHistory([]);
+      localStorage.setItem("timerHistory", JSON.stringify([]));
+    }
+  };
+
+  const toggleCategoryCollapse = (category) => {
+    setCollapsedCategories((prev) => {
+      const updated = { ...prev, [category]: !prev[category] };
+      localStorage.setItem("collapsedCategories", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  return (
+    <div className="min-h-screen p-4 md:p-10 bg-gray-50 flex flex-col items-center font-sans">
+      <h1 className="text-4xl md:text-5xl font-bold mb-6 text-[#0078D7]">
+        Healthflex Timer App
+      </h1>
+
+      {/* Navigation Tabs */}
+      <div className="bg-white rounded-lg p-1 mb-6 flex shadow-sm">
+        <button
+          onClick={() => setActiveTab("timers")}
+          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+            activeTab === "timers"
+              ? "bg-[#0078D7] text-white"
+              : "text-gray-600 hover:text-[#0078D7]"
+          }`}
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          Timers
+        </button>
+        <button
+          onClick={() => setActiveTab("history")}
+          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+            activeTab === "history"
+              ? "bg-[#0078D7] text-white"
+              : "text-gray-600 hover:text-[#0078D7]"
+          }`}
         >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
+          History
+        </button>
+      </div>
+
+      {activeTab === "timers" && (
+        <>
+          <TimerForm
+            newTimer={newTimer}
+            setNewTimer={setNewTimer}
+            addTimer={addTimer}
           />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
+          <TimerList
+            timers={timers}
+            categories={categories}
+            collapsedCategories={collapsedCategories}
+            toggleCategoryCollapse={toggleCategoryCollapse}
+            startAllInCategory={startAllInCategory}
+            pauseAllInCategory={pauseAllInCategory}
+            resetAllInCategory={resetAllInCategory}
+            startTimer={startTimer}
+            pauseTimer={pauseTimer}
+            resetTimer={resetTimer}
+            markCompleted={markCompleted}
+            deleteTimer={deleteTimer}
           />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        </>
+      )}
+
+      {activeTab === "history" && (
+        <History timerHistory={timerHistory} clearHistory={clearHistory} />
+      )}
+
+      /* Notification for Halfway Alert */
+      <Notification
+  showHalfwayAlert={showHalfwayAlert}
+  halfwayAlertTimer={halfwayAlertTimer}
+  setShowHalfwayAlert={setShowHalfwayAlert}
+  showDoneAlert={showDoneAlert}
+  doneAlertTimer={doneAlertTimer}
+  setShowDoneAlert={setShowDoneAlert}
+/>
     </div>
   );
 }
