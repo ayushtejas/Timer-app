@@ -1,36 +1,99 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Next.js Timer App
 
-## Getting Started
+## Overview
 
-First, run the development server:
+The **Next.js Timer App** is a modern, feature-rich web application built with **Next.js** and **Framer Motion** for animations. It allows users to create, manage, and interact with multiple customizable timers. The app provides a sleek and responsive user experience with dynamic progress visualization and interactive controls.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 1. Timer Creation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Users can create new timers by specifying:
+  - **Name** (e.g., "Workout Timer").
+  - **Duration** (in seconds).
+  - **Category** (e.g., "Workout," "Study").
+- The timers persist using `localStorage`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 2. Timer List with Grouping
 
-## Learn More
+- Timers are grouped by category in expandable/collapsible sections.
+- Each timer displays:
+  - **Name**
+  - **Remaining Time**
+  - **Status** (Running, Paused, or Completed)
 
-To learn more about Next.js, take a look at the following resources:
+### 3. Timer Management
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Users can control each timer with:
+  - **Start**: Begins the countdown.
+  - **Pause**: Pauses the countdown.
+  - **Reset**: Resets to original duration.
+  - **Complete**: Marks a timer as completed.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 4. Progress Visualization
 
-## Deploy on Vercel
+- A progress bar dynamically updates as time elapses.
+- Visual representation of time remaining.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 5. Bulk Actions
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Category-level buttons allow users to:
+  - Start all timers in a category.
+  - Pause all timers in a category.
+  - Reset all timers in a category.
+
+### 6. User Feedback
+
+- When a timer completes:
+  - A **modal** appears with a congratulatory message and timer name.
+
+## Installation & Setup
+
+### Prerequisites
+
+Ensure you have **Node.js** and **npm** installed.
+
+### Steps to Install & Run
+
+1. **Clone the repository:**
+
+   ```sh
+   git clone https://github.com/your-username/nextjs-timer-app.git
+   cd nextjs-timer-app
+   ```
+
+2. **Install dependencies:**
+
+   ```sh
+   npm install
+   ```
+
+3. **Run the development server:**
+
+   ```sh
+   npm run dev
+   ```
+
+4. **Open the app in your browser:** Visit `http://localhost:3000`
+
+## Technologies Used
+
+- **Next.js** – Server-side rendering and React-based frontend.
+- **Framer Motion** – Smooth animations and transitions.
+- **LocalStorage** – Persistence for timers.
+- **Tailwind CSS** – Modern and responsive UI styling.
+
+## Future Enhancements
+
+- Export timer history as a JSON file.
+- Dark mode support.
+- Filtering timers by category.
+
+## License
+
+This project is open-source and available under the **MIT License**.
+
+## Contributions
+
+Feel free to fork the repository and submit pull requests to enhance the project!
+
