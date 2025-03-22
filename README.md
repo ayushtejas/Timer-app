@@ -47,6 +47,15 @@ The **Next.js Timer App** is a modern, feature-rich web application built with *
 - When a timer completes:
   - A **modal** appears with a congratulatory message and timer name.
 
+## Assumptions
+
+- Users will manually enter categories when creating timers (no predefined categories).
+- Timers will persist using `localStorage`, meaning data will be lost if the browser cache is cleared.
+- The app will not support background execution when the tab is closed.
+- There is no authentication or user management; all timers are available to a single user session.
+- The progress bar updates dynamically but does not support real-time push notifications.
+- Timer completion messages are displayed through a modal instead of system notifications.
+
 ## Installation & Setup
 
 ### Prerequisites
@@ -58,7 +67,7 @@ Ensure you have **Node.js** and **npm** installed.
 1. **Clone the repository:**
 
    ```sh
-   git clone https://github.com/your-username/nextjs-timer-app.git
+   git clone https://github.com/ayushtejas/Timer-app.git
    cd nextjs-timer-app
    ```
 

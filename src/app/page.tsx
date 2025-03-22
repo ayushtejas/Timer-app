@@ -9,7 +9,7 @@ export default function Home() {
   const [timers, setTimers] = useState([]);
   const [newTimer, setNewTimer] = useState({
     name: "",
-    duration: 0,
+    duration: '',
     category: "",
     halfwayAlert: false,
   });
@@ -23,16 +23,21 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("timers");
   const [showDoneAlert, setShowDoneAlert] = useState(false);
 const [doneAlertTimer, setDoneAlertTimer] = useState(null);
+const [darkMode, setDarkMode] = useState(true);
+
 
   // Load data from localStorage on initial render
   useEffect(() => {
     const storedTimers = JSON.parse(localStorage.getItem("timers")) || [];
     const storedHistory = JSON.parse(localStorage.getItem("timerHistory")) || [];
     const storedCollapsed = JSON.parse(localStorage.getItem("collapsedCategories")) || {};
+    const savedDarkMode = localStorage.getItem("darkMode") === "true";
 
     setTimers(storedTimers);
     setTimerHistory(storedHistory);
     setCollapsedCategories(storedCollapsed);
+    setDarkMode(savedDarkMode);
+
   }, []);
 
   // Auto-close halfway alert
@@ -55,51 +60,63 @@ useEffect(() => {
   }
 }, [showDoneAlert]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTimers((prevTimers) =>
-        prevTimers.map((timer) => {
-          if (timer.status === "Running") {
-            const newRemaining = Math.max(0, timer.remaining - 1);
+useEffect(() => {
+  const interval = setInterval(() => {
+    setTimers((prevTimers) =>
+      prevTimers.map((timer) => {
+        if (timer.status === "Running") {
+          const newRemaining = Math.max(0, timer.remaining - 1);
 
-            if (
-              timer.halfwayAlert &&
-              Math.ceil(timer.duration / 2) === newRemaining &&
-              newRemaining > 0
-            ) {
-              setHalfwayAlertTimer(timer.name);
-              setShowHalfwayAlert(true);
-            }
+          if (
+            timer.halfwayAlert &&
+            Math.ceil(timer.duration / 2) === newRemaining &&
+            newRemaining > 0
+          ) {
+            setHalfwayAlertTimer(timer.name);
+            setShowHalfwayAlert(true);
+          }
 
-            if (newRemaining === 0 && timer.remaining !== 0) {
-              setDoneAlertTimer(timer.name);
-              setShowDoneAlert(true);
+          if (newRemaining === 0 && timer.remaining !== 0) {
+            setDoneAlertTimer(timer.name);
+            setShowDoneAlert(true);
 
-              const newHistoryItem = {
-                name: timer.name,
-                category: timer.category,
-                completedAt: new Date().toISOString(),
-                duration: timer.duration,
-              };
+            const newHistoryItem = {
+              name: timer.name,
+              category: timer.category,
+              completedAt: new Date().toISOString(),
+              duration: timer.duration,
+            };
 
-              setTimerHistory((prev) => {
+            setTimerHistory((prev) => {
+              const isAlreadyInHistory = prev.some(
+                (item) =>
+                  item.name === timer.name &&
+                  item.category === timer.category &&
+                  item.duration === timer.duration
+              );
+
+              if (!isAlreadyInHistory) {
+
                 const updatedHistory = [...prev, newHistoryItem];
                 localStorage.setItem("timerHistory", JSON.stringify(updatedHistory));
                 return updatedHistory;
-              });
+              }
 
-              return { ...timer, remaining: newRemaining, status: "Completed" };
-            }
+              return prev;
+            });
 
-            return { ...timer, remaining: newRemaining };
+            return { ...timer, remaining: newRemaining, status: "Completed" };
           }
-          return timer;
-        })
-      );
-    }, 1000);
 
-    return () => clearInterval(interval);
-  }, [timers]);
+          return { ...timer, remaining: newRemaining };
+        }
+        return timer;
+      })
+    );
+  }, 1000);
+
+  return () => clearInterval(interval);
+}, [timers]);
 
   // Saving timers to localStorage for history
   useEffect(() => {
@@ -132,7 +149,6 @@ useEffect(() => {
     setNewTimer({ name: "", duration: 0, category: "", halfwayAlert: false });
   };
 
-  // Timer control functions
   const startTimer = (index) => {
     setTimers((prev) =>
       prev.map((timer, i) =>
@@ -157,30 +173,43 @@ useEffect(() => {
     );
   };
 // function to mark completed
-  const markCompleted = (index) => {
-    const completedTimerName = timers[index].name;
-    setCompletedTimer(completedTimerName);
-    setShowModal(true);
+const markCompleted = (index) => {
+  const completedTimerName = timers[index].name;
+  setCompletedTimer(completedTimerName);
+  setShowModal(true);
 
-    const newHistoryItem = {
-      name: timers[index].name,
-      category: timers[index].category,
-      completedAt: new Date().toISOString(),
-      duration: timers[index].duration,
-    };
+  const newHistoryItem = {
+    name: timers[index].name,
+    category: timers[index].category,
+    completedAt: new Date().toISOString(),
+    duration: timers[index].duration,
+  };
 
-    setTimerHistory((prev) => {
+  setTimerHistory((prev) => {
+    // Check if the timer is already in history
+    const isAlreadyInHistory = prev.some(
+      (item) =>
+        item.name === timers[index].name &&
+        item.category === timers[index].category &&
+        item.duration === timers[index].duration
+    );
+
+    if (!isAlreadyInHistory) {
+      console.log(`Adding ${timers[index].name} to history`); // Debug log
       const updatedHistory = [...prev, newHistoryItem];
       localStorage.setItem("timerHistory", JSON.stringify(updatedHistory));
       return updatedHistory;
-    });
+    }
 
-    setTimers((prev) =>
-      prev.map((timer, i) =>
-        i === index ? { ...timer, status: "Completed" } : timer
-      )
-    );
-  };
+    return prev;
+  });
+
+  setTimers((prev) =>
+    prev.map((timer, i) =>
+      i === index ? { ...timer, status: "Completed" } : timer
+    )
+  );
+};
 
   // Bulk actions
   const startAllInCategory = (category) => {
@@ -234,11 +263,27 @@ useEffect(() => {
     });
   };
 
+  useEffect(() => {
+    localStorage.setItem("darkMode", darkMode);
+  }, [darkMode]);
+
+  // Toggle dark mode
+  const toggleDarkMode = () => {
+    setDarkMode((prev) => !prev);
+  };
+
+
   return (
-    <div className="min-h-screen p-4 md:p-10 bg-gray-50 flex flex-col items-center font-sans">
+    <div className={`bg-white ${darkMode ? "dark:bg-gray-800" : ""} min-h-screen p-4 md:p-10 bg-gray-50 flex flex-col items-center font-sans`}>
       <h1 className="text-4xl md:text-5xl font-bold mb-6 text-[#0078D7]">
         Healthflex Timer App
       </h1>
+      <button
+    onClick={toggleDarkMode}
+    className="fixed top-4 right-4 p-2 rounded-full bg-[#0078D7] text-white hover:bg-[#005BB5] transition-all"
+  >
+    {darkMode ? "☀️" : "🌙"}
+  </button>
 
       {/* Navigation Tabs */}
       <div className="bg-white rounded-lg p-1 mb-6 flex shadow-sm">
@@ -292,7 +337,7 @@ useEffect(() => {
         <History timerHistory={timerHistory} clearHistory={clearHistory} />
       )}
 
-      /* Notification for Halfway Alert */
+      {/* Notification for Done and Halfway Alert */}
       <Notification
   showHalfwayAlert={showHalfwayAlert}
   halfwayAlertTimer={halfwayAlertTimer}
